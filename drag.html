@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+	<title>实现元素拖拽</title>
+	<style type="text/css">
+	  .drag_box{
+	  	float: left;
+        margin-right: 105px;
+	  }
+      .drag_list{
+	    height: 30px;
+	    border: 1px solid #d8d8d8;
+	    margin-bottom: 10px;
+	    width: 200px;
+	    border-radius: 10px;
+	    text-align: center;
+	    line-height: 30px;
+	    cursor: move;
+      }
+      .rubbish{
+	    height: 402px;
+	    line-height: 420px;
+	    width: 100px;
+	    float: left;
+	    border: 1px solid #d8d8d8;
+	    text-align: center;
+	    background-color: gray;
+	    margin-right: 20px;
+      }
+	</style>
+</head>
+<body>
+  <div class='drag_box'>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽1</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽2</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽3</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽4</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽5</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽6</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽7</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽8</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽9</div>
+    <div class='drag_list' draggable='true' title="拖拽我">拖拽10</div>
+  </div>
+  <div class='rubbish'>垃圾箱</div>
+  <p></p>
+  <script type="text/javascript">
+      
+      //相关重点
+      //首先，为了使元素可拖动，把draggable属性设置为true
+      //上面我们将.drag_list的元素设置为可拖拽的元素
+      //dataTransfer对象是拖拽对象用来传递的媒介
+
+      // 与被拖拽元素相关的事件有
+      //ondragstart事件：当拖拽元素开始被拖拽的时候触发的事件
+      //ondrag事件：当拖拽元素被拖拽的时候触发的事件
+      //ondragend事件：当拖拽完成后触发的事件
+      
+      //与目标元素有关的事件
+      //ondragenter事件：当被拖拽元素进入目标元素的时候触发的事件
+      //ondragover事件：当被拖拽元素在目标元素上移动的时候触发的事件
+      //ondrop事件：当拖拽元素在目标元素上同时鼠标放开时触发的事件
+      
+      //默认地，无法将数据和元素放置到其他元素中，如果需要允许防止，我们需要在ondragover事件中阻止对元素地默认处理行为
+      //event.preventDefault();
+      
+
+      var drag_list=document.getElementsByClassName('drag_list');  //拖拽元素
+      var drag_box=document.getElementsByClassName('drag_box')[0];  //容器
+      var p=document.getElementsByTagName('p')[0];  //显示被删除元素的文本内容
+      var eleDrag=null;  
+      for(var i=0;i<drag_list.length;i++){
+      	drag_list[i].ondragstart=function(ev){
+      	  // 设置元素的内容
+          ev.dataTransfer.setData('text',ev.target.innerHTML); 
+          // 获取元素
+          eleDrag=ev.target;
+      	}
+      }  
+      var rubbish=document.getElementsByClassName('rubbish')[0];
+      rubbish.ondragenter=function(e){
+       this.style.color='#fff';
+       return true;
+      }
+      rubbish.ondragover=function(e){
+       // 当推拽元素在目标元素上时  阻止事件的默认行为
+       e.preventDefault();
+       return true;
+      }
+      rubbish.ondrop=function(e){
+       p.innerHTML="<strong>"+e.dataTransfer.getData('text')+"</strong>"+"被扔进了垃圾箱";
+       drag_box.removeChild(eleDrag);
+       this.style.color='#333';
+      }    
+  
+  </script>
+</body>
+</html>
