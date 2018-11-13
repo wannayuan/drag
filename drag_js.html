@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+	<title>使用原生js实现兼容边界值的元素拖拽</title>
+	<style type="text/css">
+      .draggable{
+      	width: 50px;
+      	height: 50px;
+      	background-color: red;
+      	cursor: move;
+      	position: absolute;
+      	top: 50px;
+      	left: 50px;
+      }
+	</style>
+</head>
+<body> 
+   <div id="message"></div>
+   <div class="draggable"></div>
+   <script type="text/javascript">
+     
+     //标准事件流
+     var EventUntil={
+
+     	// 给元素绑定事件
+     	addHandler:function(element,type,handler){
+
+     		if(element.addEventListener){
+     			element.addEventListener(type,handler,false);
+     		}else if(element.attachEvent){
+                element.attachEvent('on'+type,handler);
+     		}else{
+     			element['on'+type]=handler;
+     		}
+     	},
+
+     	// 给元素解除事件
+     	removeHandler:function(element,type,handler){
+          
+          if(element.removeEventListener){
+          	element.removeEventListener(type,handler,false);
+          }else if(element.detachEvent){
+            element.detachEvent('on'+type,handler);
+          }else{
+          	element['on'+type]=null;
+          }
+
+     	},
+        // 获取事件源
+	 	getTarget:function(event){
+	    
+	     var target=event.target||event.srcElement;
+	     return target;
+
+	 	},
+
+	 	//获取事件 
+	 	getEvent:function(event){
+          var e=event||window.event;
+          // 当没有事件时
+          if(!e){
+          	// caller保存调用当前函数的函数的引用
+          	var c=this.getEvent.caller;
+          	while(c){
+          		//arguments时一个类数组对象,保存传递到数组的所有参数
+          		e=c.arguments[0];
+          		if(e && Event==e.constructor){
+          			break;
+          		}
+          		c=c.getEvent.caller;
+          	}
+          }
+
+          return e;
+	 	}
+     };
+
+	 	//自定义拖拽事件
+	    function EventTarget(){
+	        //handlers是一个对象
+	        this.handlers = {};
+	    }
+
+	 	EventTarget.prototype={
+	      
+	      constructor:EventTarget,
+
+	      // 添加自定义事件
+	      addHandler:function(type,handler){
+
+            // 方括号表示法可以直接通过变量访问对象属性
+            if(typeof this.handlers[type]== 'undefined'){
+                this.handlers[type]=[];
+            }
+            this.handlers[type].push(handler);
+	      },
+
+          // 运行自定义事件  接受一个包含type和target的对象
+          run:function(obj){
+             if(!obj.target){
+             	event.target=this;
+             }
+             if( this.handlers[obj.type] instanceof Array){
+               var runs=this.handlers[obj.type];
+               for(var i=0;i<runs.length;i++){
+               	runs[i](obj);
+               }
+             }
+          },
+
+          // 删除某个事件对应的执行方法
+          removeHandler:function(type,handler){
+          	if(this.handlers[type] instanceof Array){
+          		var removes=this.handlers[type];
+          		for(var i=0;i<removes.length;i++){
+                  if(removes[i]===handler){
+                  	break;
+                  }
+          		}
+          		this.handlers[type].splice(i,1);
+          	}
+
+          }
+	 	
+	 	}
+     
+     // 封装拖拽函数 返回一个拖拽对象
+     var dragdrop=function(){
+
+     	var dragObject=new EventTarget();
+        var dragging=null,diffX=0,diffY=0,message="";
+
+        //获取浏览器的高度和宽度
+        //针对ie5+，通用的获取浏览器长宽
+        var browserW= document.documentElement.clientWidth || document.body.clientWidth;
+        var browserH = document.documentElement.clientHeight || document.body.clientHeight;
+         
+        var handleEvent=function(event){
+          
+           event=EventUntil.getEvent();
+           var target=EventUntil.getTarget(event);
+           switch(event.type){
+             case "mousedown" :
+
+               //鼠标点击的标签className中有draggable,就可以拖拽 
+               if(target.className.indexOf('draggable')>-1){
+                 dragging=target;  
+                 // 鼠标点击的地方到元素边界的偏移量
+                 diffX=event.clientX-target.offsetLeft;
+                 diffY=event.clientY-target.offsetTop;
+                 message="start drag";
+                 dragObject.run({type:"dragstart",target:dragging,mes:message});
+               }
+               break;
+              case "mousemove" :
+                //有拖拽的元素  监听mouseover的行为 
+                if(dragging!==null){
+                  if(dragging.currentStyle){
+                  	// 获取元素的宽度和高度  IE 下不支持
+                  	// currentStyle和getComputedStyle用来获取最终应用到元素上的css样式 ，返回的是css样式声明对象
+                     var draggingW=dragging.currentStyle.width;
+                     var draggingH=dragging.currentStyle.height;
+                  }else{
+                     var draggingW=document.defaultView.getComputedStyle(dragging,null).width;
+                     var draggingH=document.defaultView.getComputedStyle(dragging,null).height;
+                  }
+                  // 计算left和top left=event.clientX-diffX
+                  // 判断边界 left为例子
+                  // 最小值为0   最大值为browserW-draggingW
+                  if((event.clientX-diffX<0)){
+                     dragging.style.left=0+'px';
+                  }else if( (event.clientX-diffX) > (browserW- parseInt(draggingW) ) ){
+                     dragging.style.left=(browserW-parseInt(draggingW))+"px";
+                  }else{
+                  	dragging.style.left=(event.clientX-diffX)+"px";
+                  }
+
+                  if((event.clientY-diffY<0)){
+                     dragging.style.top=0+'px';
+                  }else if( (event.clientY-diffY) > (browserH- parseInt(draggingH) ) ){
+                     dragging.style.top=(browserH-parseInt(draggingH))+"px";
+                  }else{
+                  	dragging.style.top=(event.clientY-diffY)+"px";
+                  }
+                  message="正在拖拽中";
+                  dragObject.run({type:"drag",target:dragging,mes:message});
+                  break;
+                }
+                case "mouseup":
+                 message='';
+                 dragging=null;
+                 document.onmousemove=null;
+                 document.onmouseup=null;
+                 break;
+           }
+         
+        }
+     	//外部接口  拖拽对象添加方法
+        dragObject.enable=function(){
+           EventUntil.addHandler(document,'mousedown',handleEvent);
+           EventUntil.addHandler(document,'mousemove',handleEvent);
+           EventUntil.addHandler(document,'mouseup',handleEvent);
+        }
+
+       dragObject.disable=function(){
+	       EventUntil.removeHandler(document,'mousedown',handleEvent);
+	       EventUntil.removeHandler(document,'mousemove',handleEvent);
+	       EventUntil.removeHandler(document,'mouseup',handleEvent);
+	    }
+
+     	return dragObject;
+
+     }
+   
+   var dragObject=dragdrop();
+   dragObject.enable();
+	// 自定义拖拽事件，用于显示传入的message参数
+	dragObject.addHandler("dragstart", function(event){
+	    var message = document.getElementById("message");
+	    message.innerHTML = event.mes;
+	});
+	dragObject.addHandler("drag", function(event){
+	    var message = document.getElementById("message");
+	    message.innerHTML = event.mes;
+	});
+	dragObject.addHandler("dragend", function(event){
+	    var message = document.getElementById("message");
+	    message.innerHTML = event.mes;
+	});
+	dragObject.removeHandler('dragstart',function(event){
+	    var message = document.getElementById("message");
+	      console.log(event);
+	    message.innerHTML = event.mes;
+	});
+
+   </script>
+</body>
+</html>
