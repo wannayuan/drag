@@ -74,6 +74,15 @@
 
           return e;
 	 	}
+	     
+	  //禁止事件的默认行为
+	  preventDefault:function(event){
+              if(event.preventDefault()){
+                event.preventDefault();    
+            }else{
+	        event.returnValue=false;
+	    }
+       }
      };
 
 	 	//自定义拖拽事件
